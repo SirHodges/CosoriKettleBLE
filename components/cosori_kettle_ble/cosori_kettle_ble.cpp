@@ -121,7 +121,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       break;
     }
 
-    case ESP_GATTC_NOTIFY_EVT: {
+        case ESP_GATTC_NOTIFY_EVT: {
       if (param->notify.handle != this->rx_char_handle_)
         break;
 
@@ -133,6 +133,18 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
         hex_str += buf;
       }
       ESP_LOGD(TAG, "RX: %s", hex_str.c_str());
+
+      // Check if this is the handshake response (a5:12:00:05:00...)
+      // Send ack if we just sent registration and this is first response
+      if (this->registration_sent_ && !this->handshake_acked_ && 
+          param->notify.value_len >= 2 && 
+          param->notify.value[0] == 0xa5 && param->notify.value[1] == 0x12) {
+        ESP_LOGI(TAG, "Received handshake response, sending acknowledgment");
+        static const uint8_t ACK_PACKET[] = {0xa5, 0x22, 0x02, 0x04, 0x00, 0xb2, 0x00, 0x40, 0x40, 0x00};
+        delay(50);
+        this->send_packet_(ACK_PACKET, sizeof(ACK_PACKET));
+        this->handshake_acked_ = true;
+      }
 
       // Append to frame buffer
       this->frame_buffer_.insert(this->frame_buffer_.end(), param->notify.value,
