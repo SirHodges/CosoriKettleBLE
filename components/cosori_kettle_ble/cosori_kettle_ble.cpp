@@ -122,7 +122,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       break;
     }
 
-            case ESP_GATTC_NOTIFY_EVT: {
+                case ESP_GATTC_NOTIFY_EVT: {
       if (param->notify.handle != this->rx_char_handle_)
         break;
 
@@ -155,7 +155,6 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       this->process_frame_buffer_();
       break;
     }
-
 
     default:
       break;
