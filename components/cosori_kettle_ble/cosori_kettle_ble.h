@@ -82,8 +82,6 @@ class CosoriKettleBLE : public esphome::ble_client::BLEClientNode, public Pollin
   uint32_t last_poll_time_{0};
   bool registration_sent_{false};
   bool target_setpoint_initialized_{false};
-  bool handshake_acked_{false};
-
 
   // Custom handshake storage (optional override for different kettle firmware)
   std::vector<uint8_t> custom_hello_1_;
