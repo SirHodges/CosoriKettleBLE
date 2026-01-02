@@ -63,7 +63,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       ESP_LOGI(TAG, "BLE connection opened");
       break;
 
-    case ESP_GATTC_DISCONNECT_EVT:
+ case ESP_GATTC_DISCONNECT_EVT:
       ESP_LOGW(TAG, "BLE disconnected");
       this->node_state = esp32_ble_tracker::ClientState::IDLE;
       this->rx_char_handle_ = 0;
@@ -74,6 +74,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       this->status_received_ = false;
       this->no_response_count_ = 0;
       this->target_setpoint_initialized_ = false;
+      this->handshake_acked_ = false;
       break;
 
     case ESP_GATTC_SEARCH_CMPL_EVT: {
@@ -121,7 +122,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       break;
     }
 
-        case ESP_GATTC_NOTIFY_EVT: {
+            case ESP_GATTC_NOTIFY_EVT: {
       if (param->notify.handle != this->rx_char_handle_)
         break;
 
@@ -154,6 +155,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       this->process_frame_buffer_();
       break;
     }
+
 
     default:
       break;
