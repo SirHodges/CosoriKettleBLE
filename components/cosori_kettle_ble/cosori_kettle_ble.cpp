@@ -45,7 +45,7 @@ void CosoriKettleBLE::setup() {
 
 void CosoriKettleBLE::dump_config() {
   ESP_LOGCONFIG(TAG, "Cosori Kettle BLE:");
-  ESP_LOGCONFIG(TAG, "  MAC Address: %s", this->parent_->address_str());
+  ESP_LOGCONFIG(TAG, "  MAC Address: %s", this->parent_->address_str().c_str());
   ESP_LOGCONFIG(TAG, "  Update Interval: %ums", this->get_update_interval());
   LOG_BINARY_SENSOR("  ", "On Base", this->on_base_binary_sensor_);
   LOG_BINARY_SENSOR("  ", "Heating", this->heating_binary_sensor_);
@@ -63,7 +63,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       ESP_LOGI(TAG, "BLE connection opened");
       break;
 
- case ESP_GATTC_DISCONNECT_EVT:
+    case ESP_GATTC_DISCONNECT_EVT:
       ESP_LOGW(TAG, "BLE disconnected");
       this->node_state = esp32_ble_tracker::ClientState::IDLE;
       this->rx_char_handle_ = 0;
@@ -74,7 +74,6 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       this->status_received_ = false;
       this->no_response_count_ = 0;
       this->target_setpoint_initialized_ = false;
-      this->handshake_acked_ = false;
       break;
 
     case ESP_GATTC_SEARCH_CMPL_EVT: {
@@ -122,7 +121,7 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
       break;
     }
 
-                case ESP_GATTC_NOTIFY_EVT: {
+    case ESP_GATTC_NOTIFY_EVT: {
       if (param->notify.handle != this->rx_char_handle_)
         break;
 
@@ -134,18 +133,6 @@ void CosoriKettleBLE::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
         hex_str += buf;
       }
       ESP_LOGD(TAG, "RX: %s", hex_str.c_str());
-
-      // Check if this is the handshake response (a5:12:00:05:00...)
-      // Send ack if we just sent registration and this is first response
-      if (this->registration_sent_ && !this->handshake_acked_ && 
-          param->notify.value_len >= 2 && 
-          param->notify.value[0] == 0xa5 && param->notify.value[1] == 0x12) {
-        ESP_LOGI(TAG, "Received handshake response, sending acknowledgment");
-        static const uint8_t ACK_PACKET[] = {0xa5, 0x22, 0x02, 0x04, 0x00, 0xb2, 0x00, 0x40, 0x40, 0x00};
-        delay(50);
-        this->send_packet_(ACK_PACKET, sizeof(ACK_PACKET));
-        this->handshake_acked_ = true;
-      }
 
       // Append to frame buffer
       this->frame_buffer_.insert(this->frame_buffer_.end(), param->notify.value,
@@ -221,22 +208,6 @@ void CosoriKettleBLE::send_registration_() {
     delay(80);
     this->send_packet_(HELLO_MIN_3, sizeof(HELLO_MIN_3));
   }
-  delay(80);
-
-  // Send initial poll
-  this->send_poll_();
-}
-
-
-  
-  // Wait for kettle to respond before sending acknowledgment
-  delay(150);
-  
-  // Send acknowledgment packet (required by some firmware versions)
-  static const uint8_t ACK_PACKET[] = {0xa5, 0x22, 0x02, 0x04, 0x00, 0xb2, 0x00, 0x40, 0x40, 0x00};
-  ESP_LOGI(TAG, "Sending registration acknowledgment");
-  this->send_packet_(ACK_PACKET, sizeof(ACK_PACKET));
-  
   delay(80);
 
   // Send initial poll
