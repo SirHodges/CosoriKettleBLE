@@ -208,6 +208,15 @@ void CosoriKettleBLE::send_registration_() {
     delay(80);
     this->send_packet_(HELLO_MIN_3, sizeof(HELLO_MIN_3));
   }
+  
+  // Wait for kettle to respond before sending acknowledgment
+  delay(150);
+  
+  // Send acknowledgment packet (required by some firmware versions)
+  static const uint8_t ACK_PACKET[] = {0xa5, 0x22, 0x02, 0x04, 0x00, 0xb2, 0x00, 0x40, 0x40, 0x00};
+  ESP_LOGI(TAG, "Sending registration acknowledgment");
+  this->send_packet_(ACK_PACKET, sizeof(ACK_PACKET));
+  
   delay(80);
 
   // Send initial poll
