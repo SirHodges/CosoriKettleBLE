@@ -208,6 +208,13 @@ void CosoriKettleBLE::send_registration_() {
     delay(80);
     this->send_packet_(HELLO_MIN_3, sizeof(HELLO_MIN_3));
   }
+  delay(80);
+
+  // Send initial poll
+  this->send_poll_();
+}
+
+
   
   // Wait for kettle to respond before sending acknowledgment
   delay(150);
